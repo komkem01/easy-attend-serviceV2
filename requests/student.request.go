@@ -11,12 +11,13 @@ type StudentIdRequest struct {
 }
 
 type StudentCreateRequest struct {
-	SchoolName string `json:"school_name" binding:"required"`
-	StudentNo  string `json:"student_no"` // Made optional, will auto-generate if empty
-	Firstname  string `json:"firstname" binding:"required"`
-	Lastname   string `json:"lastname" binding:"required"`
-	GenderID   *uint  `json:"gender_id"`
-	PrefixID   *uint  `json:"prefix_id"`
+	SchoolName  string `json:"school_name" binding:"required"`
+	ClassroomID uint   `json:"classroom_id" binding:"required"`
+	StudentNo   string `json:"student_no"` // Made optional, will auto-generate if empty
+	Firstname   string `json:"firstname" binding:"required"`
+	Lastname    string `json:"lastname" binding:"required"`
+	GenderID    *uint  `json:"gender_id"`
+	PrefixID    *uint  `json:"prefix_id"`
 }
 
 type StudentUpdateRequest struct {

@@ -73,13 +73,26 @@ func (sc *StudentController) GetStudentByID(c *gin.Context) {
 }
 
 func (sc *StudentController) CreateStudent(c *gin.Context) {
-	var req requests.StudentCreateRequest
+	type StudentRequest struct {
+		Firstname  string `json:"firstname" binding:"required"`
+		Lastname   string `json:"lastname" binding:"required"`
+		SchoolName string `json:"school_name" binding:"required"`
+		StudentNo  string `json:"student_no"` // Optional, will auto-generate if empty
+		GenderID   *uint  `json:"gender_id"`
+		PrefixID   *uint  `json:"prefix_id"`
+	}
+
+	var req StudentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse("Invalid request data", err.Error()))
 		return
 	}
 
-	student, err := sc.studentService.CreateStudent(&req)
+	var studentNoPtr *string
+	if req.StudentNo != "" {
+		studentNoPtr = &req.StudentNo
+	}
+	student, err := sc.studentService.TestCreateStudent(&req.SchoolName, &req.Firstname, &req.Lastname, studentNoPtr, req.GenderID, req.PrefixID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse("Failed to create student", err.Error()))
 		return
@@ -135,4 +148,34 @@ func (sc *StudentController) DeleteStudent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response.SuccessResponse("Student deleted successfully", nil))
+}
+
+// TestCreateStudent creates a student with auto-generated classroom for testing
+func (sc *StudentController) TestCreateStudent(c *gin.Context) {
+	type TestStudentRequest struct {
+		Firstname  string `json:"firstname" binding:"required"`
+		Lastname   string `json:"lastname" binding:"required"`
+		SchoolName string `json:"school_name" binding:"required"`
+		StudentNo  string `json:"student_no"` // Optional, will auto-generate if empty
+		GenderID   *uint  `json:"gender_id"`
+		PrefixID   *uint  `json:"prefix_id"`
+	}
+
+	var req TestStudentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorResponse("Invalid request data", err.Error()))
+		return
+	}
+
+	var studentNoPtr *string
+	if req.StudentNo != "" {
+		studentNoPtr = &req.StudentNo
+	}
+	student, err := sc.studentService.TestCreateStudent(&req.SchoolName, &req.Firstname, &req.Lastname, studentNoPtr, req.GenderID, req.PrefixID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorResponse("Failed to create student", err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, response.SuccessResponse("Student created successfully", student))
 }

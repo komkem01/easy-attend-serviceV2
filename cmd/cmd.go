@@ -117,7 +117,7 @@ func setupRoutes(r *gin.Engine) {
 		// Test routes (public) - for testing only
 		test := v1.Group("/test")
 		{
-			test.POST("/students", studentController.CreateStudent)
+			test.POST("/students", studentController.TestCreateStudent)
 		}
 
 		// Protected routes
