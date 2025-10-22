@@ -1,0 +1,127 @@
+{
+	"id": "easy-attend-environment",
+	"name": "Easy Attend - Local Development",
+	"values": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/api/v1",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "teacher_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "student_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "school_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "classroom_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "gender_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "prefix_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_teacher_email",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_teacher_firstname",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_teacher_lastname",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_teacher_phone",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_school_name",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_student_firstname",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_student_lastname",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_student_no",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_student2_firstname",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_student2_lastname",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_student2_no",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "random_classroom_name",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment"
+}

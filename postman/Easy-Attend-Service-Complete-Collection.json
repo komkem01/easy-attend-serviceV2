@@ -1,0 +1,1353 @@
+{
+	"info": {
+		"_postman_id": "easy-attend-service-test",
+		"name": "Easy Attend Service - Complete API Testing",
+		"description": "Complete API testing collection for Easy Attend Service with automatic logging",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "teacher_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "student_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "school_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "classroom_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "gender_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "prefix_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "student2_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "🏫 Authentication",
+			"item": [
+				{
+					"name": "Register Teacher",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Thai name arrays",
+									"const thaiFirstNames = ['สมชาย', 'สมหญิง', 'วิชัย', 'สุภาพร', 'ประยุทธ', 'อรุณ', 'สมศักดิ์', 'วิมล', 'สุรชัย', 'กัลยา'];",
+									"const thaiLastNames = ['ใจดี', 'รักเรียน', 'ขยันหา', 'เก่งก้าว', 'มั่นคง', 'ซื่อสัตย์', 'อุตสาห์', 'ปรีชา', 'เจริญ', 'มีสุข'];",
+									"const schoolNames = ['โรงเรียนวัดไผ่', 'โรงเรียนธรรมศาสตร์', 'โรงเรียนมงกุฎ', 'โรงเรียนสวนกุหลาบ', 'โรงเรียนเตรียมอุดม', 'โรงเรียนสตรีวิทยา', 'โรงเรียนบดินทรเดชา', 'โรงเรียนสวนกุหลาบวิทยาลัย'];",
+									"",
+									"// Generate random data",
+									"const randomNum = Math.floor(Math.random() * 10000);",
+									"const firstName = thaiFirstNames[Math.floor(Math.random() * thaiFirstNames.length)];",
+									"const lastName = thaiLastNames[Math.floor(Math.random() * thaiLastNames.length)];",
+									"const schoolName = schoolNames[Math.floor(Math.random() * schoolNames.length)];",
+									"const email = `teacher${randomNum}@school.com`;",
+									"const phone = `08${Math.floor(Math.random() * 10)}-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`;",
+									"",
+									"// Set variables",
+									"pm.collectionVariables.set('random_teacher_email', email);",
+									"pm.collectionVariables.set('random_teacher_firstname', firstName);",
+									"pm.collectionVariables.set('random_teacher_lastname', lastName);",
+									"pm.collectionVariables.set('random_teacher_phone', phone);",
+									"pm.collectionVariables.set('random_school_name', schoolName);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('teacher_id', responseJson.data.id);",
+									"        pm.collectionVariables.set('school_id', responseJson.data.school_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{random_teacher_email}}\",\n    \"password\": \"password123\",\n    \"firstname\": \"{{random_teacher_firstname}}\",\n    \"lastname\": \"{{random_teacher_lastname}}\",\n    \"phone\": \"{{random_teacher_phone}}\",\n    \"school_name\": \"{{random_school_name}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login Teacher",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.token) {",
+									"        pm.collectionVariables.set('auth_token', responseJson.data.token);",
+									"        pm.collectionVariables.set('teacher_id', responseJson.data.teacher.id);",
+									"        pm.collectionVariables.set('school_id', responseJson.data.teacher.school_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{random_teacher_email}}\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👨‍🏫 Teachers",
+			"item": [
+				{
+					"name": "Get All Teachers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teachers?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["teachers"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Teacher",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"teacher2@school.com\",\n    \"password\": \"password123\",\n    \"firstname\": \"สมหญิง\",\n    \"lastname\": \"รักเรียน\",\n    \"phone\": \"081-987-6543\",\n    \"school_id\": \"{{school_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/teachers",
+							"host": ["{{base_url}}"],
+							"path": ["teachers"]
+						}
+					}
+				},
+				{
+					"name": "Get Teacher by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teachers/{{teacher_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["teachers", "{{teacher_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Teacher",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"teacher1_updated@school.com\",\n    \"firstname\": \"สมชาย (แก้ไข)\",\n    \"lastname\": \"ใจดี\",\n    \"phone\": \"081-234-5679\",\n    \"school_name\": \"โรงเรียนวัดไผ่\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/teachers/{{teacher_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["teachers", "{{teacher_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👩‍🎓 Students",
+			"item": [
+				{
+					"name": "Get All Students",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/students?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["students"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Student (Auto Student Number)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Thai student names",
+									"const studentFirstNames = ['นางสาวสมใส', 'นายสมศักดิ์', 'นางสาววิชชุดา', 'นายธนกร', 'นางสาวพิมพ์ลดา', 'นายอนุชา', 'นางสาวกรรณิการ์', 'นายรัฐกรณ์', 'นางสาวญาณิสา', 'นายกิตติ'];",
+									"const studentLastNames = ['เรียนดี', 'ขยันเรียน', 'รักหนังสือ', 'ใฝ่รู้', 'เก่งเก็บ', 'ฉลาดจริง', 'ซื่อสัตย์', 'มีคุณธรรม', 'ดีเด่น', 'เป็นแบบอย่าง'];",
+									"",
+									"// Generate random student data (no need for student_no - auto-generated)",
+									"const firstName = studentFirstNames[Math.floor(Math.random() * studentFirstNames.length)];",
+									"const lastName = studentLastNames[Math.floor(Math.random() * studentLastNames.length)];",
+									"",
+									"// Set variables",
+									"pm.collectionVariables.set('random_student_firstname', firstName);",
+									"pm.collectionVariables.set('random_student_lastname', lastName);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('student_id', responseJson.data.id);",
+									"        // Auto-generated student_no is in response",
+									"        pm.collectionVariables.set('random_student_no', responseJson.data.student_no);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstname\": \"{{random_student_firstname}}\",\n    \"lastname\": \"{{random_student_lastname}}\",\n    \"school_name\": \"{{random_school_name}}\",\n    \"gender_id\": 1,\n    \"prefix_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/test/students",
+							"host": ["{{base_url}}"],
+							"path": ["test", "students"]
+						}
+					}
+				},
+				{
+					"name": "Create Student 2 (Auto Student Number)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Thai student names",
+									"const studentFirstNames = ['นางสาวสมใส', 'นายสมศักดิ์', 'นางสาววิชชุดา', 'นายธนกร', 'นางสาวพิมพ์ลดา', 'นายอนุชา', 'นางสาวกรรณิการ์', 'นายรัฐกรณ์', 'นางสาวญาณิสา', 'นายกิตติ'];",
+									"const studentLastNames = ['เรียนดี', 'ขยันเรียน', 'รักหนังสือ', 'ใฝ่รู้', 'เก่งเก็บ', 'ฉลาดจริง', 'ซื่อสัตย์', 'มีคุณธรรม', 'ดีเด่น', 'เป็นแบบอย่าง'];",
+									"",
+									"// Generate random student data (no need for student_no - auto-generated)",
+									"const firstName = studentFirstNames[Math.floor(Math.random() * studentFirstNames.length)];",
+									"const lastName = studentLastNames[Math.floor(Math.random() * studentLastNames.length)];",
+									"",
+									"// Set variables for student 2",
+									"pm.collectionVariables.set('random_student2_firstname', firstName);",
+									"pm.collectionVariables.set('random_student2_lastname', lastName);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('student2_id', responseJson.data.id);",
+									"        // Auto-generated student_no is in response",
+									"        pm.collectionVariables.set('random_student2_no', responseJson.data.student_no);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstname\": \"{{random_student2_firstname}}\",\n    \"lastname\": \"{{random_student2_lastname}}\",\n    \"school_name\": \"{{random_school_name}}\",\n    \"gender_id\": 2,\n    \"prefix_id\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/test/students",
+							"host": ["{{base_url}}"],
+							"path": ["test", "students"]
+						}
+					}
+				},
+				{
+					"name": "Get Student by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/students/{{student_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["students", "{{student_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Student",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"student_no\": \"STD001\",\n    \"firstname\": \"นางสาวสมใส (แก้ไข)\",\n    \"lastname\": \"เรียนดี\",\n    \"school_name\": \"โรงเรียนวัดไผ่\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/students/{{student_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["students", "{{student_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏫 Schools",
+			"item": [
+				{
+					"name": "Get All Schools",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/schools?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["schools"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create School",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"โรงเรียนวัดไผ่ขยาย\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/schools",
+							"host": ["{{base_url}}"],
+							"path": ["schools"]
+						}
+					}
+				},
+				{
+					"name": "Get School by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/schools/{{school_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["schools", "{{school_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🎯 Lookup Data",
+			"item": [
+				{
+					"name": "Get All Genders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.length > 0) {",
+									"        pm.collectionVariables.set('gender_id', responseJson.data[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/genders",
+							"host": ["{{base_url}}"],
+							"path": ["genders"]
+						}
+					}
+				},
+				{
+					"name": "Get All Prefixes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.length > 0) {",
+									"        pm.collectionVariables.set('prefix_id', responseJson.data[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/prefixes",
+							"host": ["{{base_url}}"],
+							"path": ["prefixes"]
+						}
+					}
+				},
+				{
+					"name": "Create Gender",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ไม่ระบุ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/genders",
+							"host": ["{{base_url}}"],
+							"path": ["genders"]
+						}
+					}
+				},
+				{
+					"name": "Create Prefix",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ด.ช.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/prefixes",
+							"host": ["{{base_url}}"],
+							"path": ["prefixes"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏛️ Classrooms",
+			"item": [
+				{
+					"name": "Get All Classrooms",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/classrooms",
+							"host": ["{{base_url}}"],
+							"path": ["classrooms"]
+						}
+					}
+				},
+				{
+					"name": "Create Classroom",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate random classroom name",
+									"const grades = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6', 'ป.1', 'ป.2', 'ป.3', 'ป.4', 'ป.5', 'ป.6'];",
+									"const sections = Math.floor(Math.random() * 10) + 1; // 1-10",
+									"const grade = grades[Math.floor(Math.random() * grades.length)];",
+									"const classroomName = `${grade}/${sections}`;",
+									"",
+									"// Set variable",
+									"pm.collectionVariables.set('random_classroom_name', classroomName);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('classroom_id', responseJson.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"school_id\": \"{{school_id}}\",\n    \"teacher_id\": \"{{teacher_id}}\",\n    \"name\": \"{{random_classroom_name}}\",\n    \"grade\": \"ม.1\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classrooms",
+							"host": ["{{base_url}}"],
+							"path": ["classrooms"]
+						}
+					}
+				},
+				{
+					"name": "Get Classroom by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/classrooms/{{classroom_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["classrooms", "{{classroom_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Classroom",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"school_id\": \"{{school_id}}\",\n    \"teacher_id\": \"{{teacher_id}}\",\n    \"name\": \"ม.3/1 (แก้ไข)\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classrooms/{{classroom_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["classrooms", "{{classroom_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👥 Classroom Members",
+			"item": [
+				{
+					"name": "Get All Classroom Members",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/classroom-members",
+							"host": ["{{base_url}}"],
+							"path": ["classroom-members"]
+						}
+					}
+				},
+				{
+					"name": "Get Members by Classroom",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/classroom-members/classroom/{{classroom_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["classroom-members", "classroom", "{{classroom_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Add Student to Classroom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": {{classroom_id}},\n    \"student_id\": {{student_id}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classroom-members",
+							"host": ["{{base_url}}"],
+							"path": ["classroom-members"]
+						}
+					}
+				},
+				{
+					"name": "Add Teacher to Classroom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": \"{{classroom_id}}\",\n    \"teacher_id\": \"{{teacher_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classroom-members",
+							"host": ["{{base_url}}"],
+							"path": ["classroom-members"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📋 Attendances",
+			"item": [
+				{
+					"name": "Get All Attendances",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				},
+				{
+					"name": "Create Attendance - Present",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": {{classroom_id}},\n    \"teacher_id\": {{teacher_id}},\n    \"student_id\": {{student_id}},\n    \"session_date\": \"2025-10-23\",\n    \"status\": \"present\",\n    \"checked_at\": {{$timestamp}},\n    \"remark\": \"เข้าเรียนตรงเวลา\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				},
+				{
+					"name": "Create Attendance - Absent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": \"{{classroom_id}}\",\n    \"teacher_id\": \"{{teacher_id}}\",\n    \"student_id\": \"{{student_id}}\",\n    \"session_date\": \"2025-10-24\",\n    \"status\": \"absent\",\n    \"checked_at\": 1729742400,\n    \"remark\": \"ป่วย\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				},
+				{
+					"name": "Get Attendances by Classroom",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendances/classroom/{{classroom_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendances", "classroom", "{{classroom_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Attendances by Student",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendances/student/{{student_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendances", "student", "{{student_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "� FK Relationships Tests",
+			"item": [
+				{
+					"name": "Add Student 2 to Classroom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": {{classroom_id}},\n    \"student_id\": {{student2_id}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classroom-members",
+							"host": ["{{base_url}}"],
+							"path": ["classroom-members"]
+						}
+					}
+				},
+				{
+					"name": "Create Attendance - Student 2 Late",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": {{classroom_id}},\n    \"teacher_id\": {{teacher_id}},\n    \"student_id\": {{student2_id}},\n    \"session_date\": \"2025-10-23\",\n    \"status\": \"late\",\n    \"checked_at\": {{$timestamp}},\n    \"remark\": \"มาสาย 15 นาที\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				},
+				{
+					"name": "Test Different Attendance Status - Absent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": {{classroom_id}},\n    \"teacher_id\": {{teacher_id}},\n    \"student_id\": {{student_id}},\n    \"session_date\": \"2025-10-24\",\n    \"status\": \"absent\",\n    \"checked_at\": {{$timestamp}},\n    \"remark\": \"ป่วย\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				},
+				{
+					"name": "Test Leave Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": {{classroom_id}},\n    \"teacher_id\": {{teacher_id}},\n    \"student_id\": {{student2_id}},\n    \"session_date\": \"2025-10-25\",\n    \"status\": \"leave\",\n    \"checked_at\": {{$timestamp}},\n    \"remark\": \"ลากิจ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "�📊 Logs (Read-Only)",
+			"item": [
+				{
+					"name": "Get All Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/logs",
+							"host": ["{{base_url}}"],
+							"path": ["logs"]
+						}
+					}
+				},
+				{
+					"name": "Get Logs by Teacher",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/logs/teacher/{{teacher_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["logs", "teacher", "{{teacher_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Logs by Action - Login",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/logs/action?action=login",
+							"host": ["{{base_url}}"],
+							"path": ["logs", "action"],
+							"query": [
+								{
+									"key": "action",
+									"value": "login"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Logs by Action - Attendance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/logs/action?action=attendance",
+							"host": ["{{base_url}}"],
+							"path": ["logs", "action"],
+							"query": [
+								{
+									"key": "action",
+									"value": "attendance"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Manual Log (if needed)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"teacher_id\": \"{{teacher_id}}\",\n    \"action\": \"attendance\",\n    \"detail\": \"บันทึก log ด้วยตนเอง - ทดสอบระบบ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/logs",
+							"host": ["{{base_url}}"],
+							"path": ["logs"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🚀 Complete Test Flow (FK + Auto Student Numbers)",
+			"item": [
+				{
+					"name": "Step 1 - Register Teacher & Auto-Create School",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('teacher_id', responseJson.data.id);",
+									"        pm.collectionVariables.set('school_id', responseJson.data.school_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"flowtest@school.com\",\n    \"password\": \"password123\",\n    \"firstname\": \"ครูทดสอบ\",\n    \"lastname\": \"ระบบสมบูรณ์\",\n    \"phone\": \"081-111-2222\",\n    \"school_name\": \"โรงเรียนทดสอบ FK Relations\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Step 2 - Login to Get Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.token) {",
+									"        pm.collectionVariables.set('auth_token', responseJson.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"flowtest@school.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Step 3 - Create Student with Auto Student Number",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('student_id', responseJson.data.id);",
+									"        console.log('Auto-generated Student No:', responseJson.data.student_no);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstname\": \"นักเรียนทดสอบ\",\n    \"lastname\": \"ระบบ FK\",\n    \"school_name\": \"โรงเรียนทดสอบ FK Relations\",\n    \"gender_id\": 1,\n    \"prefix_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/test/students",
+							"host": ["{{base_url}}"],
+							"path": ["test", "students"]
+						}
+					}
+				},
+				{
+					"name": "Step 4 - Create Second Student",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('student2_id', responseJson.data.id);",
+									"        console.log('Auto-generated Student No 2:', responseJson.data.student_no);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstname\": \"นักเรียนทดสอบ\",\n    \"lastname\": \"คนที่สอง\",\n    \"school_name\": \"โรงเรียนทดสอบ FK Relations\",\n    \"gender_id\": 2,\n    \"prefix_id\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/test/students",
+							"host": ["{{base_url}}"],
+							"path": ["test", "students"]
+						}
+					}
+				},
+				{
+					"name": "Step 5 - Create Classroom with FK",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.id) {",
+									"        pm.collectionVariables.set('classroom_id', responseJson.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"school_id\": \"{{school_id}}\",\n    \"teacher_id\": \"{{teacher_id}}\",\n    \"name\": \"ห้องทดสอบ FK Relations\",\n    \"grade\": \"ม.1\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classrooms",
+							"host": ["{{base_url}}"],
+							"path": ["classrooms"]
+						}
+					}
+				},
+				{
+					"name": "Step 6 - Add Students to Classroom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": \"{{classroom_id}}\",\n    \"student_id\": \"{{student_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classroom-members",
+							"host": ["{{base_url}}"],
+							"path": ["classroom-members"]
+						}
+					}
+				},
+				{
+					"name": "Step 7 - Add Second Student to Classroom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": \"{{classroom_id}}\",\n    \"student_id\": \"{{student2_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/classroom-members",
+							"host": ["{{base_url}}"],
+							"path": ["classroom-members"]
+						}
+					}
+				},
+				{
+					"name": "Step 8 - Record Attendance (Present)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": \"{{classroom_id}}\",\n    \"teacher_id\": \"{{teacher_id}}\",\n    \"student_id\": \"{{student_id}}\",\n    \"session_date\": \"2025-10-23\",\n    \"status\": \"present\",\n    \"checked_at\": {{$timestamp}},\n    \"remark\": \"มาตรงเวลา - ทดสอบ FK สำเร็จ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				},
+				{
+					"name": "Step 9 - Record Attendance (Late)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classroom_id\": \"{{classroom_id}}\",\n    \"teacher_id\": \"{{teacher_id}}\",\n    \"student_id\": \"{{student2_id}}\",\n    \"session_date\": \"2025-10-23\",\n    \"status\": \"late\",\n    \"checked_at\": {{$timestamp}},\n    \"remark\": \"มาสาย 10 นาที\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/attendances",
+							"host": ["{{base_url}}"],
+							"path": ["attendances"]
+						}
+					}
+				},
+				{
+					"name": "Step 10 - View All Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/logs",
+							"host": ["{{base_url}}"],
+							"path": ["logs"]
+						}
+					}
+				},
+				{
+					"name": "Step 11 - View Classroom Attendances",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/attendances/classroom/{{classroom_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["attendances", "classroom", "{{classroom_id}}"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
