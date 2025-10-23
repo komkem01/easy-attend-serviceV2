@@ -51,13 +51,13 @@ var serveCmd = &cobra.Command{
 		// Create Gin router
 		r := gin.Default()
 
-		// Add CORS middleware
+		// Add CORS middleware with more permissive settings for development
 		r.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:8080", "http://127.0.0.1:3000", "*"}, // Add your frontend URLs
-			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
-			ExposeHeaders:    []string{"Content-Length"},
-			AllowCredentials: true,
+			AllowAllOrigins:  true, // Allow all origins for development
+			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"},
+			AllowHeaders:     []string{"*"}, // Allow all headers
+			ExposeHeaders:    []string{"Content-Length", "Authorization"},
+			AllowCredentials: false, // Set to false when using AllowAllOrigins
 			MaxAge:           12 * time.Hour,
 		}))
 
@@ -119,8 +119,9 @@ func setupRoutes(r *gin.Engine) {
 	// API v1 routes
 	v1 := r.Group("/api/v1")
 	{
-		// Auth routes (public)
+		// Auth routes (public) - with strict rate limiting
 		auth := v1.Group("/auth")
+		auth.Use(middlewares.StrictRateLimit())
 		{
 			auth.POST("/login", authController.Login)
 			auth.POST("/register", authController.Register)
@@ -128,17 +129,23 @@ func setupRoutes(r *gin.Engine) {
 
 		// Test routes (public) - for testing only
 		test := v1.Group("/test")
+		test.Use(middlewares.NormalRateLimit())
 		{
 			test.POST("/students", studentController.TestCreateStudent)
 		}
 
-		// Protected routes
+		// Protected routes - with normal rate limiting
 		protected := v1.Group("")
 		protected.Use(middlewares.AuthMiddleware())
+		protected.Use(middlewares.NormalRateLimit())
 		{
 			// Auth profile and logout routes
 			protected.GET("/auth/profile", authController.GetProfile)
 			protected.POST("/auth/logout", authController.Logout)
+
+			// Teacher info (comprehensive data)
+			protected.GET("/teacher/info", teacherController.GetTeacherInfo)
+			protected.GET("/teacher/school", schoolController.GetTeacherSchool)
 
 			// Teacher routes
 			teachers := protected.Group("/teachers")
@@ -150,10 +157,10 @@ func setupRoutes(r *gin.Engine) {
 				teachers.DELETE("/:id", teacherController.DeleteTeacher)
 			}
 
-			// Student routes
+			// Student routes (filtered by authenticated teacher)
 			students := protected.Group("/students")
 			{
-				students.GET("", studentController.GetAllStudents)
+				students.GET("", studentController.GetAllStudents) // Returns only students taught by this teacher
 				students.POST("", studentController.CreateStudent)
 				students.GET("/:id", studentController.GetStudentByID)
 				students.PUT("/:id", studentController.UpdateStudent)
@@ -190,10 +197,10 @@ func setupRoutes(r *gin.Engine) {
 				prefixes.DELETE("/:id", prefixController.DeletePrefix)
 			}
 
-			// Classroom routes
+			// Classroom routes (filtered by authenticated teacher)
 			classrooms := protected.Group("/classrooms")
 			{
-				classrooms.GET("", classroomController.GetAllClassrooms)
+				classrooms.GET("", classroomController.GetAllClassrooms) // Returns only classrooms taught by this teacher
 				classrooms.POST("", classroomController.CreateClassroom)
 				classrooms.GET("/:id", classroomController.GetClassroomByID)
 				classrooms.PUT("/:id", classroomController.UpdateClassroom)
@@ -210,10 +217,10 @@ func setupRoutes(r *gin.Engine) {
 				classroomMembers.DELETE("/:classroom_id/:member_id", classroomMemberController.DeleteClassroomMember)
 			}
 
-			// Attendance routes
+			// Attendance routes (filtered by authenticated teacher)
 			attendances := protected.Group("/attendances")
 			{
-				attendances.GET("", attendanceController.GetAllAttendances)
+				attendances.GET("", attendanceController.GetAllAttendances) // Returns only attendances for this teacher
 				attendances.POST("", attendanceController.CreateAttendance)
 				attendances.GET("/:id", attendanceController.GetAttendanceByID)
 				attendances.PUT("/:id", attendanceController.UpdateAttendance)

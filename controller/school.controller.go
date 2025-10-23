@@ -136,3 +136,33 @@ func (sc *SchoolController) DeleteSchool(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response.SuccessResponse("School deleted successfully", nil))
 }
+
+// GetTeacherSchool gets the school information for the authenticated teacher
+func (sc *SchoolController) GetTeacherSchool(c *gin.Context) {
+	// Get teacher ID from JWT context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", "User ID not found in token"))
+		return
+	}
+
+	teacherIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", "Invalid user ID format"))
+		return
+	}
+
+	teacherID, err := strconv.ParseUint(teacherIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorResponse("Invalid teacher ID", "Teacher ID must be a valid number"))
+		return
+	}
+
+	school, err := sc.schoolService.GetSchoolByTeacher(uint(teacherID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to get teacher school", err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, response.SuccessResponse("Teacher school retrieved successfully", school))
+}

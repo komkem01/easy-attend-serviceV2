@@ -174,6 +174,10 @@ func RawAfterQueryMigrate() []string {
 		`CREATE INDEX IF NOT EXISTS "idx_attendances_teacher_id" ON "attendances"("teacher_id");`,
 		`CREATE INDEX IF NOT EXISTS "idx_attendances_student_id" ON "attendances"("student_id");`,
 		`CREATE INDEX IF NOT EXISTS "idx_attendances_session_date" ON "attendances"("session_date");`,
+		// Composite indexes for common queries
+		`CREATE INDEX IF NOT EXISTS "idx_attendances_classroom_student_date" ON "attendances"("classroom_id", "student_id", "session_date");`,
+		`CREATE INDEX IF NOT EXISTS "idx_attendances_student_date" ON "attendances"("student_id", "session_date");`,
+		`CREATE INDEX IF NOT EXISTS "idx_attendances_classroom_date" ON "attendances"("classroom_id", "session_date");`,
 
 		`CREATE INDEX IF NOT EXISTS "idx_logs_teacher_id" ON "logs"("teacher_id");`,
 		`CREATE INDEX IF NOT EXISTS "idx_logs_school_id" ON "logs"("school_id");`,

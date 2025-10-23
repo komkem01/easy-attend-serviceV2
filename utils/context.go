@@ -2,13 +2,35 @@ package utils
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
-// GetTeacherIDFromContext ดึง teacher ID จาก JWT context
-func GetTeacherIDFromContext(c *gin.Context) (uuid.UUID, error) {
+// GetTeacherIDFromContext ดึง teacher ID จาก JWT context (รูปแบบ uint)
+func GetTeacherIDFromContext(c *gin.Context) (uint, error) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		return 0, errors.New("user ID not found in context")
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		return 0, errors.New("invalid user ID format in context")
+	}
+
+	// Parse as uint
+	id, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		return 0, errors.New("failed to parse teacher ID")
+	}
+
+	return uint(id), nil
+}
+
+// GetTeacherIDUUIDFromContext ดึง teacher ID จาก JWT context (รูปแบบ UUID - สำหรับระบบเก่า)
+func GetTeacherIDUUIDFromContext(c *gin.Context) (uuid.UUID, error) {
 	userID, exists := c.Get("user_id")
 	if !exists {
 		return uuid.Nil, errors.New("user ID not found in context")

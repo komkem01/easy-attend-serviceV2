@@ -7,11 +7,9 @@ import (
 	"easy-attend-service/services"
 	"easy-attend-service/utils"
 	"easy-attend-service/utils/logger"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 type AuthController struct {
@@ -57,13 +55,14 @@ func (ac *AuthController) Register(c *gin.Context) {
 }
 
 func (ac *AuthController) GetProfile(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", "User ID not found"))
+	// Get teacher ID from context using utility function
+	teacherID, err := utils.GetTeacherIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", err.Error()))
 		return
 	}
 
-	teacher, err := ac.authService.GetProfile(userID.(string))
+	teacher, err := ac.authService.GetProfile(teacherID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, response.ErrorResponse("Profile not found", err.Error()))
 		return
@@ -72,30 +71,17 @@ func (ac *AuthController) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, response.SuccessResponse("Profile retrieved successfully", teacher))
 }
 
-// Logout godoc
-// @Summary Logout user
-// @Description Logout user and log the activity
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Success 200 {object} response.Response
-// @Router /auth/logout [post]
 func (ac *AuthController) Logout(c *gin.Context) {
 	// Get teacher ID from context
 	teacherID, err := utils.GetTeacherIDFromContext(c)
 	if err != nil {
-		logger.LogError(err, "Failed to get teacher ID from context", logrus.Fields{})
 		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", err.Error()))
 		return
 	}
 
 	// Get teacher info for school ID
-	teacher, err := ac.authService.GetProfile(teacherID.String())
+	teacher, err := ac.authService.GetProfile(teacherID)
 	if err != nil {
-		logger.LogError(err, "Failed to get teacher profile for logout", logrus.Fields{
-			"teacher_id": teacherID.String(),
-		})
 		// Still allow logout even if we can't get profile
 	}
 
@@ -115,11 +101,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 		teacherIDVal = *teacherIDUint
 	}
 
-	logger.LogActivity(teacherIDVal, models.LogActionLogout, fmt.Sprintf("ออกจากระบบ"), schoolID)
-
-	logger.LogInfo("User logged out successfully", logrus.Fields{
-		"teacher_id": teacherID.String(),
-	})
+	logger.LogActivity(teacherIDVal, models.LogActionLogout, "ออกจากระบบ", schoolID)
 
 	c.JSON(http.StatusOK, response.SuccessResponse("Logged out successfully", nil))
 }

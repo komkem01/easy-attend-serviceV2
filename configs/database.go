@@ -45,8 +45,15 @@ func ConnectDatabase() {
 
 func AutoMigrate() {
 	err := DB.AutoMigrate(
+		&models.Gender{},
+		&models.Prefix{},
+		&models.School{},
 		&models.Teacher{},
 		&models.Student{},
+		&models.Classroom{},
+		&models.ClassroomMember{},
+		&models.Attendance{},
+		&models.Log{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

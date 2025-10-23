@@ -18,22 +18,6 @@ func NewAttendanceService() *AttendanceService {
 	return &AttendanceService{}
 }
 
-func (s *AttendanceService) GetAllAttendances() ([]models.Attendance, error) {
-	logger.LogInfo("Fetching all attendances", logrus.Fields{})
-
-	var attendances []models.Attendance
-	if err := configs.DB.Find(&attendances).Error; err != nil {
-		logger.LogError(err, "Failed to fetch attendances", logrus.Fields{})
-		return nil, errors.New("failed to fetch attendances")
-	}
-
-	logger.LogInfo("Successfully fetched attendances", logrus.Fields{
-		"count": len(attendances),
-	})
-
-	return attendances, nil
-}
-
 func (s *AttendanceService) GetAttendanceByID(id uint) (*models.Attendance, error) {
 	logger.LogInfo("Fetching attendance by ID", logrus.Fields{
 		"attendance_id": fmt.Sprintf("%d", id),
@@ -56,36 +40,74 @@ func (s *AttendanceService) GetAttendanceByID(id uint) (*models.Attendance, erro
 	return &attendance, nil
 }
 
-func (s *AttendanceService) GetAttendancesByClassroom(classroomID uint) ([]models.Attendance, error) {
+func (s *AttendanceService) GetAttendancesByClassroom(classroomID uint, page, limit int) ([]models.Attendance, int64, error) {
 	logger.LogInfo("Fetching attendances by classroom", logrus.Fields{
 		"classroom_id": fmt.Sprintf("%d", classroomID),
+		"page":         page,
+		"limit":        limit,
 	})
 
+	// Count total records
+	var total int64
+	if err := configs.DB.Model(&models.Attendance{}).Where("classroom_id = ?", classroomID).Count(&total).Error; err != nil {
+		logger.LogError(err, "Failed to count attendances", logrus.Fields{
+			"classroom_id": fmt.Sprintf("%d", classroomID),
+		})
+		return nil, 0, errors.New("failed to count attendances")
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
 	var attendances []models.Attendance
-	if err := configs.DB.Where("classroom_id = ?", classroomID).Find(&attendances).Error; err != nil {
+	if err := configs.DB.
+		Where("classroom_id = ?", classroomID).
+		Order("session_date DESC, created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&attendances).Error; err != nil {
 		logger.LogError(err, "Failed to fetch attendances by classroom", logrus.Fields{
 			"classroom_id": fmt.Sprintf("%d", classroomID),
 		})
-		return nil, errors.New("failed to fetch attendances")
+		return nil, 0, errors.New("failed to fetch attendances")
 	}
 
-	return attendances, nil
+	return attendances, total, nil
 }
 
-func (s *AttendanceService) GetAttendancesByStudent(studentID uint) ([]models.Attendance, error) {
+func (s *AttendanceService) GetAttendancesByStudent(studentID uint, page, limit int) ([]models.Attendance, int64, error) {
 	logger.LogInfo("Fetching attendances by student", logrus.Fields{
 		"student_id": fmt.Sprintf("%d", studentID),
+		"page":       page,
+		"limit":      limit,
 	})
 
+	// Count total records
+	var total int64
+	if err := configs.DB.Model(&models.Attendance{}).Where("student_id = ?", studentID).Count(&total).Error; err != nil {
+		logger.LogError(err, "Failed to count attendances", logrus.Fields{
+			"student_id": fmt.Sprintf("%d", studentID),
+		})
+		return nil, 0, errors.New("failed to count attendances")
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
 	var attendances []models.Attendance
-	if err := configs.DB.Where("student_id = ?", studentID).Find(&attendances).Error; err != nil {
+	if err := configs.DB.
+		Where("student_id = ?", studentID).
+		Order("session_date DESC, created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&attendances).Error; err != nil {
 		logger.LogError(err, "Failed to fetch attendances by student", logrus.Fields{
 			"student_id": fmt.Sprintf("%d", studentID),
 		})
-		return nil, errors.New("failed to fetch attendances")
+		return nil, 0, errors.New("failed to fetch attendances")
 	}
 
-	return attendances, nil
+	return attendances, total, nil
 }
 
 func (s *AttendanceService) CreateAttendance(req *requests.AttendanceCreateRequest) (*models.Attendance, error) {
@@ -216,4 +238,25 @@ func (s *AttendanceService) DeleteAttendance(id uint) error {
 	})
 
 	return nil
+}
+
+// GetAttendancesByTeacher gets all attendance records for a specific teacher
+func (s *AttendanceService) GetAttendancesByTeacher(teacherID uint) ([]models.Attendance, error) {
+	var attendances []models.Attendance
+
+	if err := configs.DB.
+		Preload("Student").
+		Preload("Student.School").
+		Preload("Student.Classroom").
+		Preload("Student.Gender").
+		Preload("Student.Prefix").
+		Preload("Classroom").
+		Preload("Teacher").
+		Where("teacher_id = ?", teacherID).
+		Order("checked_at DESC").
+		Find(&attendances).Error; err != nil {
+		return nil, errors.New("failed to get attendances by teacher")
+	}
+
+	return attendances, nil
 }

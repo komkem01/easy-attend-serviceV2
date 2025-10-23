@@ -4,13 +4,10 @@ import (
 	"easy-attend-service/requests"
 	"easy-attend-service/response"
 	"easy-attend-service/services"
-	"easy-attend-service/utils/logger"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 type AttendanceController struct {
@@ -24,11 +21,27 @@ func NewAttendanceController() *AttendanceController {
 }
 
 func (ac *AttendanceController) GetAllAttendances(c *gin.Context) {
-	logger.LogInfo("Fetching all attendances", logrus.Fields{})
+	// Get teacher ID from JWT context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", "User ID not found in token"))
+		return
+	}
 
-	attendances, err := ac.attendanceService.GetAllAttendances()
+	teacherIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", "Invalid user ID format"))
+		return
+	}
+
+	teacherID, err := strconv.ParseUint(teacherIDStr, 10, 64)
 	if err != nil {
-		logger.LogError(err, "Failed to fetch attendances", logrus.Fields{})
+		c.JSON(http.StatusBadRequest, response.ErrorResponse("Invalid teacher ID", "Teacher ID must be a valid number"))
+		return
+	}
+
+	attendances, err := ac.attendanceService.GetAttendancesByTeacher(uint(teacherID))
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to fetch attendances", err.Error()))
 		return
 	}
@@ -46,19 +59,12 @@ func (ac *AttendanceController) GetAttendanceByID(c *gin.Context) {
 		return
 	}
 
-	logger.LogInfo("Fetching attendance by ID", logrus.Fields{
-		"attendance_id": idStr,
-	})
-
 	attendance, err := ac.attendanceService.GetAttendanceByID(uint(id))
 	if err != nil {
 		if err.Error() == "attendance not found" {
 			c.JSON(http.StatusNotFound, response.ErrorResponse("Attendance not found", err.Error()))
 			return
 		}
-		logger.LogError(err, "Failed to fetch attendance", logrus.Fields{
-			"attendance_id": idStr,
-		})
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to fetch attendance", err.Error()))
 		return
 	}
@@ -76,20 +82,34 @@ func (ac *AttendanceController) GetAttendancesByClassroom(c *gin.Context) {
 		return
 	}
 
-	logger.LogInfo("Fetching attendances by classroom", logrus.Fields{
-		"classroom_id": classroomIDStr,
-	})
+	// Get pagination parameters
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
 
-	attendances, err := ac.attendanceService.GetAttendancesByClassroom(uint(classroomID))
+	// Validate pagination
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+
+	attendances, total, err := ac.attendanceService.GetAttendancesByClassroom(uint(classroomID), page, limit)
 	if err != nil {
-		logger.LogError(err, "Failed to fetch attendances by classroom", logrus.Fields{
-			"classroom_id": classroomIDStr,
-		})
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to fetch attendances", err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, response.SuccessResponse("Attendances retrieved successfully", attendances))
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Attendances retrieved successfully",
+		"data":    attendances,
+		"pagination": gin.H{
+			"page":  page,
+			"limit": limit,
+			"total": total,
+		},
+	})
 }
 
 func (ac *AttendanceController) GetAttendancesByStudent(c *gin.Context) {
@@ -102,20 +122,34 @@ func (ac *AttendanceController) GetAttendancesByStudent(c *gin.Context) {
 		return
 	}
 
-	logger.LogInfo("Fetching attendances by student", logrus.Fields{
-		"student_id": studentIDStr,
-	})
+	// Get pagination parameters
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
 
-	attendances, err := ac.attendanceService.GetAttendancesByStudent(uint(studentID))
+	// Validate pagination
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+
+	attendances, total, err := ac.attendanceService.GetAttendancesByStudent(uint(studentID), page, limit)
 	if err != nil {
-		logger.LogError(err, "Failed to fetch attendances by student", logrus.Fields{
-			"student_id": studentIDStr,
-		})
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to fetch attendances", err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, response.SuccessResponse("Attendances retrieved successfully", attendances))
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Attendances retrieved successfully",
+		"data":    attendances,
+		"pagination": gin.H{
+			"page":  page,
+			"limit": limit,
+			"total": total,
+		},
+	})
 }
 
 func (ac *AttendanceController) CreateAttendance(c *gin.Context) {
@@ -125,22 +159,12 @@ func (ac *AttendanceController) CreateAttendance(c *gin.Context) {
 		return
 	}
 
-	logger.LogInfo("Creating new attendance", logrus.Fields{
-		"classroom_id": fmt.Sprintf("%d", req.ClassroomID),
-		"student_id":   fmt.Sprintf("%d", req.StudentID),
-		"session_date": req.SessionDate,
-	})
-
 	attendance, err := ac.attendanceService.CreateAttendance(&req)
 	if err != nil {
 		if err.Error() == "attendance for this student on this date already exists" {
 			c.JSON(http.StatusBadRequest, response.ErrorResponse("Attendance already exists", err.Error()))
 			return
 		}
-		logger.LogError(err, "Failed to create attendance", logrus.Fields{
-			"classroom_id": fmt.Sprintf("%d", req.ClassroomID),
-			"student_id":   fmt.Sprintf("%d", req.StudentID),
-		})
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to create attendance", err.Error()))
 		return
 	}
@@ -164,20 +188,12 @@ func (ac *AttendanceController) UpdateAttendance(c *gin.Context) {
 		return
 	}
 
-	logger.LogInfo("Updating attendance", logrus.Fields{
-		"attendance_id": idStr,
-		"status":        string(req.Status),
-	})
-
 	attendance, err := ac.attendanceService.UpdateAttendance(uint(id), &req)
 	if err != nil {
 		if err.Error() == "attendance not found" {
 			c.JSON(http.StatusNotFound, response.ErrorResponse("Attendance not found", err.Error()))
 			return
 		}
-		logger.LogError(err, "Failed to update attendance", logrus.Fields{
-			"attendance_id": idStr,
-		})
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to update attendance", err.Error()))
 		return
 	}
@@ -195,19 +211,12 @@ func (ac *AttendanceController) DeleteAttendance(c *gin.Context) {
 		return
 	}
 
-	logger.LogInfo("Deleting attendance", logrus.Fields{
-		"attendance_id": idStr,
-	})
-
 	err = ac.attendanceService.DeleteAttendance(uint(id))
 	if err != nil {
 		if err.Error() == "attendance not found" {
 			c.JSON(http.StatusNotFound, response.ErrorResponse("Attendance not found", err.Error()))
 			return
 		}
-		logger.LogError(err, "Failed to delete attendance", logrus.Fields{
-			"attendance_id": idStr,
-		})
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to delete attendance", err.Error()))
 		return
 	}

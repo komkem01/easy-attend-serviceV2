@@ -101,6 +101,40 @@ func (s *AuthService) Register(req *requests.AuthRequest) (*models.Teacher, erro
 		}
 	}
 
+	// Find or create gender if provided
+	var genderID *uint
+	if req.GenderName != "" {
+		var gender models.Gender
+		err := configs.DB.Where("name = ?", req.GenderName).First(&gender).Error
+		if err != nil {
+			// Gender doesn't exist, create new one
+			gender = models.Gender{
+				Name: req.GenderName,
+			}
+			if err := configs.DB.Create(&gender).Error; err != nil {
+				return nil, errors.New("failed to create gender")
+			}
+		}
+		genderID = &gender.ID
+	}
+
+	// Find or create prefix if provided
+	var prefixID *uint
+	if req.PrefixName != "" {
+		var prefix models.Prefix
+		err := configs.DB.Where("name = ?", req.PrefixName).First(&prefix).Error
+		if err != nil {
+			// Prefix doesn't exist, create new one
+			prefix = models.Prefix{
+				Name: req.PrefixName,
+			}
+			if err := configs.DB.Create(&prefix).Error; err != nil {
+				return nil, errors.New("failed to create prefix")
+			}
+		}
+		prefixID = &prefix.ID
+	}
+
 	// Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
@@ -115,6 +149,8 @@ func (s *AuthService) Register(req *requests.AuthRequest) (*models.Teacher, erro
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Phone:     req.Phone,
+		GenderID:  genderID,
+		PrefixID:  prefixID,
 	}
 
 	if err := configs.DB.Create(&teacher).Error; err != nil {
@@ -127,9 +163,9 @@ func (s *AuthService) Register(req *requests.AuthRequest) (*models.Teacher, erro
 	return &teacher, nil
 }
 
-func (s *AuthService) GetProfile(userID string) (*models.Teacher, error) {
+func (s *AuthService) GetProfile(userID uint) (*models.Teacher, error) {
 	var teacher models.Teacher
-	if err := configs.DB.Where("id = ?", userID).First(&teacher).Error; err != nil {
+	if err := configs.DB.Preload("School").Preload("Gender").Preload("Prefix").Where("id = ?", userID).First(&teacher).Error; err != nil {
 		return nil, errors.New("teacher not found")
 	}
 	return &teacher, nil

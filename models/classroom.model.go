@@ -16,6 +16,7 @@ type Classroom struct {
 
 	// Has Many Relationships
 	Members     []ClassroomMember `gorm:"foreignKey:ClassroomID" json:"members,omitempty"`
+	Students    []Student         `gorm:"foreignKey:ClassroomID" json:"students,omitempty"`
 	Attendances []Attendance      `gorm:"foreignKey:ClassroomID" json:"attendances,omitempty"`
 }
 

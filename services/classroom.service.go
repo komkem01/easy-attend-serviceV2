@@ -19,22 +19,6 @@ func NewClassroomService() *ClassroomService {
 	return &ClassroomService{}
 }
 
-func (s *ClassroomService) GetAllClassrooms() ([]models.Classroom, error) {
-	logger.LogInfo("Fetching all classrooms", logrus.Fields{})
-
-	var classrooms []models.Classroom
-	if err := configs.DB.Where("deleted_at IS NULL").Find(&classrooms).Error; err != nil {
-		logger.LogError(err, "Failed to fetch classrooms", logrus.Fields{})
-		return nil, errors.New("failed to fetch classrooms")
-	}
-
-	logger.LogInfo("Successfully fetched classrooms", logrus.Fields{
-		"count": len(classrooms),
-	})
-
-	return classrooms, nil
-}
-
 func (s *ClassroomService) GetClassroomByID(id uint) (*models.Classroom, error) {
 	logger.LogInfo("Fetching classroom by ID", logrus.Fields{
 		"classroom_id": fmt.Sprintf("%d", id),
@@ -198,4 +182,15 @@ func (s *ClassroomService) DeleteClassroom(id uint) error {
 	logger.LogActivity(*classroom.TeacherID, models.LogActionDeleteClassroom, fmt.Sprintf("ลบห้องเรียน: %s", classroom.Name), classroom.SchoolID)
 
 	return nil
+}
+
+// GetClassroomsByTeacher gets all classrooms for a specific teacher
+func (s *ClassroomService) GetClassroomsByTeacher(teacherID uint) ([]models.Classroom, error) {
+	var classrooms []models.Classroom
+
+	if err := configs.DB.Where("teacher_id = ?", teacherID).Find(&classrooms).Error; err != nil {
+		return nil, errors.New("failed to get classrooms by teacher")
+	}
+
+	return classrooms, nil
 }

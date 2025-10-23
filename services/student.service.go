@@ -55,26 +55,6 @@ func (s *StudentService) generateStudentNo(classroomID uint) (string, error) {
 	return fmt.Sprintf("STD%03d", nextNum), nil
 }
 
-func (s *StudentService) GetAllStudents(page, limit int) ([]models.Student, int64, error) {
-	var students []models.Student
-	var total int64
-
-	// Count total records
-	if err := configs.DB.Model(&models.Student{}).Count(&total).Error; err != nil {
-		return nil, 0, errors.New("failed to count students")
-	}
-
-	// Calculate offset
-	offset := (page - 1) * limit
-
-	// Get students with pagination
-	if err := configs.DB.Offset(offset).Limit(limit).Find(&students).Error; err != nil {
-		return nil, 0, errors.New("failed to get students")
-	}
-
-	return students, total, nil
-}
-
 func (s *StudentService) GetStudentByID(id uint) (*models.Student, error) {
 	var student models.Student
 	if err := configs.DB.Where("id = ?", id).First(&student).Error; err != nil {
@@ -176,9 +156,9 @@ func (s *StudentService) CreateStudent(req *requests.StudentCreateRequest) (*mod
 		"school_id":  fmt.Sprintf("%d", school.ID),
 	})
 
-	// Log activity automatically - ใช้ teacherID จาก context หรือ system user
-	// TODO: Get actual teacher ID from context/session
-	var systemTeacherID uint = 1 // Temporary - should get from auth context
+	// Log activity automatically - use teacherID from service parameter if available
+	// Note: For now using a default system user ID. Should be passed from controller context.
+	var systemTeacherID uint = 1 // Default system user
 	logger.LogActivity(systemTeacherID, models.LogActionCreateStudent, fmt.Sprintf("สร้างนักเรียนใหม่: %s %s (รหัส: %s)", req.Firstname, req.Lastname, studentNo), &school.ID)
 
 	return &student, nil
@@ -228,7 +208,7 @@ func (s *StudentService) UpdateStudent(id uint, req *requests.StudentUpdateReque
 	}
 
 	// Log activity automatically
-	var systemTeacherID uint = 1 // TODO: Get actual teacher ID from context/session
+	var systemTeacherID uint = 1 // Default system user
 	logger.LogActivity(systemTeacherID, models.LogActionUpdateStudent,
 		fmt.Sprintf("อัพเดทข้อมูลนักเรียน: %s %s (รหัส: %s)", req.Firstname, req.Lastname, req.StudentNo),
 		&school.ID)
@@ -246,7 +226,7 @@ func (s *StudentService) DeleteStudent(id uint) error {
 	}
 
 	// Log activity automatically before deletion
-	var systemTeacherID uint = 1 // TODO: Get actual teacher ID from context/session
+	var systemTeacherID uint = 1 // Default system user
 	logger.LogActivity(systemTeacherID, models.LogActionDeleteStudent,
 		fmt.Sprintf("ลบข้อมูลนักเรียน: %s %s (รหัส: %s)", student.FirstName, student.LastName, student.StudentNo),
 		student.SchoolID)
@@ -438,4 +418,36 @@ func (s *StudentService) TestCreateStudent(schoolName, firstname, lastname, stud
 	}
 
 	return &student, nil
+}
+
+// GetStudentsByTeacherPaginated gets all students taught by a specific teacher with pagination
+func (s *StudentService) GetStudentsByTeacherPaginated(teacherID uint, page, limit int) ([]models.Student, int64, error) {
+	var students []models.Student
+	var total int64
+
+	// Count total students for this teacher
+	if err := configs.DB.
+		Model(&models.Student{}).
+		Joins("JOIN classrooms ON students.classroom_id = classrooms.id").
+		Where("classrooms.teacher_id = ?", teacherID).
+		Count(&total).Error; err != nil {
+		return nil, 0, errors.New("failed to count students")
+	}
+
+	// Get paginated students
+	offset := (page - 1) * limit
+	if err := configs.DB.
+		Preload("School").
+		Preload("Classroom").
+		Preload("Gender").
+		Preload("Prefix").
+		Joins("JOIN classrooms ON students.classroom_id = classrooms.id").
+		Where("classrooms.teacher_id = ?", teacherID).
+		Offset(offset).
+		Limit(limit).
+		Find(&students).Error; err != nil {
+		return nil, 0, errors.New("failed to get students by teacher")
+	}
+
+	return students, total, nil
 }

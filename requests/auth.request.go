@@ -7,6 +7,8 @@ type AuthRequest struct {
 	LastName   string `json:"lastname" binding:"required"`
 	Phone      string `json:"phone"`
 	SchoolName string `json:"school_name" binding:"required"`
+	GenderName string `json:"gender_name"` // Optional, will auto-create if provided
+	PrefixName string `json:"prefix_name"` // Optional, will auto-create if provided
 }
 
 type LoginRequest struct {

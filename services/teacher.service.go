@@ -156,3 +156,104 @@ func (s *TeacherService) DeleteTeacher(id string) error {
 
 	return nil
 }
+
+// TeacherInfo represents comprehensive teacher information
+type TeacherInfo struct {
+	Teacher    models.Teacher  `json:"teacher"`
+	School     models.School   `json:"school"`
+	Classrooms []ClassroomInfo `json:"classrooms"`
+	TotalStats TeacherStats    `json:"total_stats"`
+}
+
+type ClassroomInfo struct {
+	Classroom    models.Classroom `json:"classroom"`
+	StudentCount int64            `json:"student_count"`
+	Students     []models.Student `json:"students"`
+}
+
+type TeacherStats struct {
+	TotalClassrooms int64 `json:"total_classrooms"`
+	TotalStudents   int64 `json:"total_students"`
+	TotalAttendance int64 `json:"total_attendance"`
+}
+
+// GetTeacherInfo gets comprehensive information for a specific teacher
+func (s *TeacherService) GetTeacherInfo(teacherID uint) (*TeacherInfo, error) {
+	// Get teacher with relationships
+	var teacher models.Teacher
+	if err := configs.DB.Preload("School").Preload("Gender").Preload("Prefix").Where("id = ?", teacherID).First(&teacher).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("teacher not found")
+		}
+		return nil, errors.New("failed to get teacher")
+	}
+
+	// Get teacher's classrooms with preloaded students (optimized to prevent N+1 query)
+	var classrooms []models.Classroom
+	if err := configs.DB.
+		Preload("Students", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Gender").Preload("Prefix")
+		}).
+		Where("teacher_id = ?", teacherID).
+		Find(&classrooms).Error; err != nil {
+		return nil, errors.New("failed to get classrooms")
+	}
+
+	// Get attendance counts for all classrooms in a single query (optimized)
+	type AttendanceCountResult struct {
+		ClassroomID uint
+		Count       int64
+	}
+	var attendanceCounts []AttendanceCountResult
+	configs.DB.Model(&models.Attendance{}).
+		Select("classroom_id, COUNT(*) as count").
+		Where("teacher_id = ?", teacherID).
+		Group("classroom_id").
+		Scan(&attendanceCounts)
+
+	// Create a map for quick lookup
+	attendanceCountMap := make(map[uint]int64)
+	for _, ac := range attendanceCounts {
+		attendanceCountMap[ac.ClassroomID] = ac.Count
+	}
+
+	// Get detailed classroom info with students
+	var classroomInfos []ClassroomInfo
+	var totalStudents int64
+	var totalAttendance int64
+
+	for _, classroom := range classrooms {
+		// Students are already loaded via Preload
+		students := classroom.Students
+		if students == nil {
+			students = []models.Student{}
+		}
+
+		// Get attendance count from map
+		attendanceCount := attendanceCountMap[classroom.ID]
+
+		classroomInfo := ClassroomInfo{
+			Classroom:    classroom,
+			StudentCount: int64(len(students)),
+			Students:     students,
+		}
+
+		classroomInfos = append(classroomInfos, classroomInfo)
+		totalStudents += int64(len(students))
+		totalAttendance += attendanceCount
+	}
+
+	// Prepare teacher info
+	teacherInfo := &TeacherInfo{
+		Teacher:    teacher,
+		School:     *teacher.School,
+		Classrooms: classroomInfos,
+		TotalStats: TeacherStats{
+			TotalClassrooms: int64(len(classrooms)),
+			TotalStudents:   totalStudents,
+			TotalAttendance: totalAttendance,
+		},
+	}
+
+	return teacherInfo, nil
+}

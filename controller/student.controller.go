@@ -21,6 +21,25 @@ func NewStudentController() *StudentController {
 }
 
 func (sc *StudentController) GetAllStudents(c *gin.Context) {
+	// Get teacher ID from JWT context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", "User ID not found in token"))
+		return
+	}
+
+	teacherIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse("Unauthorized", "Invalid user ID format"))
+		return
+	}
+
+	teacherID, err := strconv.ParseUint(teacherIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorResponse("Invalid teacher ID", "Teacher ID must be a valid number"))
+		return
+	}
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
@@ -31,7 +50,8 @@ func (sc *StudentController) GetAllStudents(c *gin.Context) {
 		limit = 10
 	}
 
-	students, total, err := sc.studentService.GetAllStudents(page, limit)
+	// Get students for this teacher only
+	students, total, err := sc.studentService.GetStudentsByTeacherPaginated(uint(teacherID), page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to get students", err.Error()))
 		return

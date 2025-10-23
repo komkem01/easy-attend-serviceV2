@@ -106,3 +106,21 @@ func (s *SchoolService) DeleteSchool(id uint) error {
 
 	return nil
 }
+
+// GetSchoolByTeacher gets the school information for a specific teacher
+func (s *SchoolService) GetSchoolByTeacher(teacherID uint) (*models.School, error) {
+	var school models.School
+
+	// Get school through teacher relationship
+	if err := configs.DB.
+		Joins("JOIN teachers ON schools.id = teachers.school_id").
+		Where("teachers.id = ?", teacherID).
+		First(&school).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("school not found for this teacher")
+		}
+		return nil, errors.New("failed to get school by teacher")
+	}
+
+	return &school, nil
+}
